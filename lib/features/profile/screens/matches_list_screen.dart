@@ -14,11 +14,7 @@ class MatchesListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Only show users with >= 75% compatibility, sorted by score
-    final matches = SampleData.users
-        .where((u) => u.id != currentUser.id && u.compatibilityWith(currentUser) >= 0.75)
-        .toList()
-      ..sort((a, b) =>
-          b.compatibilityWith(currentUser).compareTo(a.compatibilityWith(currentUser)));
+    final matches = <UserModel>[];
 
     return Scaffold(
       backgroundColor: AppColors.background,

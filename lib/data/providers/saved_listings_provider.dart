@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/local_db_service.dart';
 
 class SavedListingsProvider with ChangeNotifier {
   // Saved property listing IDs
@@ -6,6 +7,19 @@ class SavedListingsProvider with ChangeNotifier {
 
   // Liked / wishlisted roommate user IDs
   final Set<String> _likedUserIds = {};
+
+  final LocalDbService _db = LocalDbService();
+  bool _initialized = false;
+
+  /// Load saved data from local storage
+  Future<void> loadSaved() async {
+    if (_initialized) return;
+    await _db.init();
+    _savedListingIds.addAll(_db.getSavedListingIds());
+    _likedUserIds.addAll(_db.getLikedUserIds());
+    _initialized = true;
+    notifyListeners();
+  }
 
   // ── Listings ──────────────────────────────────────────────────────────────
 
@@ -19,16 +33,19 @@ class SavedListingsProvider with ChangeNotifier {
     } else {
       _savedListingIds.add(listingId);
     }
+    _persistSaved();
     notifyListeners();
   }
 
   void saveListings(String listingId) {
     _savedListingIds.add(listingId);
+    _persistSaved();
     notifyListeners();
   }
 
   void removeSavedListing(String listingId) {
     _savedListingIds.remove(listingId);
+    _persistSaved();
     notifyListeners();
   }
 
@@ -44,16 +61,19 @@ class SavedListingsProvider with ChangeNotifier {
     } else {
       _likedUserIds.add(userId);
     }
+    _persistLiked();
     notifyListeners();
   }
 
   void likeUser(String userId) {
     _likedUserIds.add(userId);
+    _persistLiked();
     notifyListeners();
   }
 
   void unlikeUser(String userId) {
     _likedUserIds.remove(userId);
+    _persistLiked();
     notifyListeners();
   }
 
@@ -62,6 +82,20 @@ class SavedListingsProvider with ChangeNotifier {
   void clearAll() {
     _savedListingIds.clear();
     _likedUserIds.clear();
+    _persistSaved();
+    _persistLiked();
     notifyListeners();
+  }
+
+  // ── Persistence ───────────────────────────────────────────────────────────
+
+  Future<void> _persistSaved() async {
+    await _db.init();
+    await _db.saveSavedListingIds(_savedListingIds.toList());
+  }
+
+  Future<void> _persistLiked() async {
+    await _db.init();
+    await _db.saveLikedUserIds(_likedUserIds.toList());
   }
 }

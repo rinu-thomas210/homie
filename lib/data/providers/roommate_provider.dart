@@ -4,8 +4,7 @@ class RoommateProvider with ChangeNotifier {
   String? _rentedListingId;
   final List<String> _roommateIds = [];
   final List<String> _pendingSentRequests = [];
-  // Pre-seed an incoming request from Alex Rivera (id: '1') to test the acceptance flow
-  final List<String> _pendingReceivedRequests = ['1'];
+  final List<String> _pendingReceivedRequests = [];
   final List<String> _requestedListingIds = [];
 
   String? get rentedListingId => _rentedListingId;

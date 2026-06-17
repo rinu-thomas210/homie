@@ -13,7 +13,7 @@ class MyReviewsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final currentUser = auth.currentUser ?? SampleData.currentUser;
+    final currentUser = auth.currentUser!;
     final reviewProvider = context.watch<ReviewProvider>();
     final myReviews = reviewProvider.reviewsBy(currentUser.name);
 

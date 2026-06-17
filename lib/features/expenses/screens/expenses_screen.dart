@@ -118,7 +118,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          expenses.netBalance >= 0 ? 'You are owed money 💰' : 'You owe money',
+                          expenses.netBalance >= 0 ? 'You are owed money' : 'You owe money',
                           style: GoogleFonts.outfit(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
                         ),
                       ],

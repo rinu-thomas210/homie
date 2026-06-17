@@ -31,13 +31,290 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       final auth = context.read<AuthProvider>();
       await auth.signIn(_emailController.text, _passwordController.text);
+      
+      if (auth.error != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.error!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
       if (mounted && auth.isAuthenticated) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainApp()),
+          MaterialPageRoute(builder: (_) => const RootScreen()),
           (route) => false,
         );
       }
     }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    final auth = context.read<AuthProvider>();
+    await auth.signInWithGoogle();
+    
+    if (auth.error != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.error!),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
+    if (mounted && auth.isAuthenticated) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const RootScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  void _showForgotPasswordDialog() {
+    final resetEmailController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final resetFormKey = GlobalKey<FormState>();
+    int step = 1; // 1 = enter email, 2 = enter new password
+    String? validatedEmail;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: Colors.white,
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      step == 1 ? Icons.email_outlined : Icons.lock_reset_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    step == 1 ? 'Reset Password' : 'New Password',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ],
+              ),
+              content: Form(
+                key: resetFormKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (step == 1) ...[
+                      Text(
+                        'Enter your registered email address to reset your password.',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: resetEmailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          hintText: 'yourname@gmail.com',
+                          prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textLight),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Enter your email';
+                          if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(v.trim())) {
+                            return 'Enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                    if (step == 2) ...[
+                      Text(
+                        'Enter a new password for $validatedEmail',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: newPasswordController,
+                        obscureText: obscureNew,
+                        decoration: InputDecoration(
+                          hintText: 'New password',
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textLight),
+                          suffixIcon: IconButton(
+                            onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                            icon: Icon(
+                              obscureNew ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                        validator: (v) => (v?.length ?? 0) < 6 ? 'Min 6 characters' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: confirmPasswordController,
+                        obscureText: obscureConfirm,
+                        decoration: InputDecoration(
+                          hintText: 'Confirm new password',
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textLight),
+                          suffixIcon: IconButton(
+                            onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                            icon: Icon(
+                              obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v != newPasswordController.text) return 'Passwords do not match';
+                          return null;
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.outfit(
+                      color: AppColors.textMedium,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (!(resetFormKey.currentState?.validate() ?? false)) return;
+
+                    if (step == 1) {
+                      final email = resetEmailController.text.trim();
+                      final auth = context.read<AuthProvider>();
+                      // Verify account exists
+                      final exists = await auth.checkAccountExists(email);
+                      if (!exists) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No account found for this email.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      // Account exists — proceed to step 2
+                      validatedEmail = email;
+                      setDialogState(() => step = 2);
+                    } else {
+                      // Step 2: Actually reset the password
+                      final auth = context.read<AuthProvider>();
+                      final error = await auth.resetPassword(
+                        validatedEmail!,
+                        newPasswordController.text,
+                      );
+                      Navigator.of(dialogContext).pop();
+                      if (error != null) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(error), backgroundColor: Colors.red),
+                          );
+                        }
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Password reset successfully! You can now sign in.'),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  ),
+                  child: Text(
+                    step == 1 ? 'Continue' : 'Reset Password',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -74,7 +351,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 40),
 
                   Text(
-                    'Welcome back 👋',
+                    'Welcome back',
                     style: GoogleFonts.outfit(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
@@ -108,10 +385,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      hintText: 'your@email.com',
+                      hintText: 'yourname@gmail.com',
                       prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textLight),
                     ),
-                    validator: (v) => (v?.isEmpty ?? true) ? 'Enter your email' : null,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Enter your email';
+                      if (!RegExp(r'^[a-zA-Z0-9._%+-]+@gmail\.com$').hasMatch(v)) {
+                        return 'Only @gmail.com email addresses are allowed';
+                      }
+                      return null;
+                    },
                   ).animate().slideY(begin: 0.2, duration: 400.ms, delay: 100.ms).fade(duration: 400.ms, delay: 100.ms),
 
                   const SizedBox(height: 20),
@@ -148,7 +431,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: _showForgotPasswordDialog,
                       child: Text(
                         'Forgot Password?',
                         style: GoogleFonts.outfit(
@@ -212,7 +495,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: _SocialButton(
                           icon: Icons.g_mobiledata_rounded,
                           label: 'Google',
-                          onTap: _login,
+                          onTap: _loginWithGoogle,
                         ),
                       ),
                       const SizedBox(width: 12),

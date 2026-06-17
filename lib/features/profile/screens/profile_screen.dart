@@ -7,12 +7,15 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../../../core/utils/image_helper.dart';
+import '../../../main.dart';
 import 'edit_profile_screen.dart';
 import 'matches_list_screen.dart';
 import 'saved_listings_screen.dart';
 import '../../listings/screens/post_listing_screen.dart';
 import 'my_reviews_screen.dart';
 import 'notifications_screen.dart';
+import '../../auth/screens/login_screen.dart';
+import 'my_listings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -20,8 +23,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final user = auth.currentUser ?? SampleData.currentUser;
-    final matchesCount = SampleData.users.where((u) => u.id != user.id && u.compatibilityWith(user) >= 0.75).length;
+    final user = auth.currentUser!;
+    final matchesCount = 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -72,8 +75,14 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
-                    onTap: () {
-                      context.read<AuthProvider>().signOut();
+                    onTap: () async {
+                      await context.read<AuthProvider>().signOut();
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                        );
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.all(10),
@@ -429,6 +438,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildMenuSection(BuildContext context) {
     final menuItems = [
       {'icon': Icons.add_business_outlined, 'label': 'Post a Room', 'color': AppColors.primary},
+      {'icon': Icons.maps_home_work_outlined, 'label': 'My Postings', 'color': AppColors.accent},
       {'icon': Icons.bookmark_outlined, 'label': 'Saved Profiles & Listings', 'color': AppColors.primary},
       {'icon': Icons.star_outline_rounded, 'label': 'My Reviews', 'color': AppColors.accentOrange},
       {'icon': Icons.notifications_outlined, 'label': 'Notifications', 'color': AppColors.accentGreen},
@@ -467,6 +477,12 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const PostListingScreen(),
+                        ),
+                      );
+                    } else if (item['label'] == 'My Postings') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const MyListingsScreen(),
                         ),
                       );
                     } else if (item['label'] == 'Saved Profiles & Listings') {

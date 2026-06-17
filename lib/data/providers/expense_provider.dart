@@ -4,63 +4,30 @@ import '../models/expense_model.dart';
 class ExpenseProvider with ChangeNotifier {
   final List<Expense> _expenses = [
     Expense(
-      id: 'e1',
-      title: 'August Rent',
-      type: ExpenseType.rent,
-      amount: 2400,
-      paidById: '1',
-      paidByName: 'Alex Rivera',
-      date: DateTime.now().subtract(const Duration(days: 5)),
-      splitAmong: ['me', '1', '3'],
-      isEqualSplit: true,
-    ),
-    Expense(
-      id: 'e2',
-      title: 'Electric Bill',
-      type: ExpenseType.electricity,
-      amount: 120,
-      paidById: 'me',
-      paidByName: 'You',
-      date: DateTime.now().subtract(const Duration(days: 3)),
-      splitAmong: ['me', '1', '3'],
-      isEqualSplit: true,
-    ),
-    Expense(
-      id: 'e3',
-      title: 'Internet',
+      id: 'dummy_1',
+      title: 'Internet Bill',
       type: ExpenseType.internet,
-      amount: 80,
-      paidById: '3',
-      paidByName: 'Marcus Webb',
-      date: DateTime.now().subtract(const Duration(days: 10)),
-      splitAmong: ['me', '1', '3'],
-      isEqualSplit: true,
-    ),
-    Expense(
-      id: 'e4',
-      title: 'Groceries Run',
-      type: ExpenseType.groceries,
-      amount: 180,
+      amount: 60.0,
       paidById: 'me',
-      paidByName: 'You',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      splitAmong: ['me', '1'],
+      paidByName: 'Me',
+      date: DateTime.now().subtract(const Duration(days: 2)),
+      splitAmong: ['me', 'user1'],
       isEqualSplit: true,
     ),
     Expense(
-      id: 'e5',
-      title: 'Water Bill',
-      type: ExpenseType.water,
-      amount: 45,
-      paidById: '1',
-      paidByName: 'Alex Rivera',
-      date: DateTime.now().subtract(const Duration(days: 8)),
-      splitAmong: ['me', '1', '3'],
+      id: 'dummy_2',
+      title: 'Groceries',
+      type: ExpenseType.groceries,
+      amount: 150.0,
+      paidById: 'user1',
+      paidByName: 'Roommate',
+      date: DateTime.now().subtract(const Duration(days: 5)),
+      splitAmong: ['me', 'user1'],
       isEqualSplit: true,
     ),
   ];
 
-  List<String> _currentRoommates = [];
+  List<String> _currentRoommates = ['user1'];
 
   void updateRoommates(List<String> roommates) {
     if (roommates.length == _currentRoommates.length &&

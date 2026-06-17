@@ -3,118 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../models/message_model.dart';
 
 class MessageProvider with ChangeNotifier {
-  final List<Conversation> _conversations = [
-    Conversation(
-      id: 'c1',
-      otherUserId: '1',
-      otherUserName: 'Alex Rivera',
-      otherUserPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-      otherUserVerified: true,
-      isOnline: true,
-      compatibility: 0.92,
-      messages: [
-        Message(
-          id: 'm1',
-          senderId: '1',
-          text: 'Hey! I saw your profile and I think we\'d be great roommates!',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm2',
-          senderId: 'me',
-          text: 'Hi Alex! I love your listing in Chelsea. When can we visit?',
-          timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm3',
-          senderId: '1',
-          text: 'How about this Saturday at 2pm? The place is even better in person 😊',
-          timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 30)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm4',
-          senderId: 'me',
-          text: 'Saturday works perfectly for me!',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm5',
-          senderId: '1',
-          text: 'Great! I\'ll send you the address. Looking forward to it! 🏠',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-          isRead: false,
-        ),
-      ],
-    ),
-    Conversation(
-      id: 'c2',
-      otherUserId: '2',
-      otherUserName: 'Jamie Chen',
-      otherUserPhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-      otherUserVerified: true,
-      isOnline: false,
-      compatibility: 0.88,
-      messages: [
-        Message(
-          id: 'm6',
-          senderId: '2',
-          text: 'Hi! Your compatibility score with me is 88%. I\'d love to connect!',
-          timestamp: DateTime.now().subtract(const Duration(days: 1)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm7',
-          senderId: 'me',
-          text: 'Hey Jamie! Your architecture work is so impressive.',
-          timestamp: DateTime.now().subtract(const Duration(hours: 22)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm8',
-          senderId: '2',
-          text: 'Thank you! I\'m looking in Brooklyn too. Maybe we could look together?',
-          timestamp: DateTime.now().subtract(const Duration(hours: 20)),
-          isRead: false,
-        ),
-      ],
-    ),
-    Conversation(
-      id: 'c3',
-      otherUserId: '5',
-      otherUserName: 'Leo Zhang',
-      otherUserPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400',
-      otherUserVerified: true,
-      isOnline: true,
-      compatibility: 0.81,
-      messages: [
-        Message(
-          id: 'm9',
-          senderId: '5',
-          text: 'Hey! Saw you\'re also into remote work and cooking. Same vibes! 🍜',
-          timestamp: DateTime.now().subtract(const Duration(days: 2)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm10',
-          senderId: 'me',
-          text: 'Haha yes! What do you usually cook?',
-          timestamp: DateTime.now().subtract(const Duration(days: 2, hours: -1)),
-          isRead: true,
-        ),
-        Message(
-          id: 'm11',
-          senderId: '5',
-          text: 'Lots of Asian food! I\'ll cook for us if you find the place 😄',
-          timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 20)),
-          isRead: true,
-        ),
-      ],
-    ),
-  ];
+  final List<Conversation> _conversations = [];
 
   List<Conversation> get conversations => List.unmodifiable(_conversations);
 
@@ -191,7 +80,7 @@ class MessageProvider with ChangeNotifier {
             Message(
               id: 'gm1',
               senderId: roommateIds.isNotEmpty ? roommateIds.first : '1',
-              text: 'Hey roommates! Welcome to our group chat! 🏠 Let\'s use this to stay in touch.',
+              text: 'Hey roommates! Welcome to our group chat! Let\'s use this to stay in touch.',
               timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
               isRead: true,
             ),

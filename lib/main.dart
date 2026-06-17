@@ -12,15 +12,17 @@ import 'data/providers/review_provider.dart';
 import 'data/providers/roommate_provider.dart';
 import 'data/providers/listings_provider.dart';
 import 'data/providers/notification_provider.dart';
+import 'data/services/local_db_service.dart';
 
 import 'features/auth/screens/splash_screen.dart';
+import 'features/auth/screens/flash_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/explore/screens/explore_screen.dart';
 import 'features/messages/screens/messages_screen.dart';
 import 'features/expenses/screens/expenses_screen.dart';
 import 'features/profile/screens/profile_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -28,7 +30,36 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+  // Initialize local database
+  await LocalDbService().init();
   runApp(const HomieApp());
+}
+
+Future<void>? _initAppFuture;
+
+Future<void> _initApp(BuildContext context) {
+  _initAppFuture ??= _doInitApp(context);
+  return _initAppFuture!;
+}
+
+Future<void> _doInitApp(BuildContext context) async {
+  final auth = context.read<AuthProvider>();
+  final listings = context.read<ListingsProvider>();
+  final reviews = context.read<ReviewProvider>();
+  final saved = context.read<SavedListingsProvider>();
+
+  await Future.wait([
+    auth.tryAutoLogin(),
+    listings.loadListings(),
+    reviews.loadReviews(),
+    saved.loadSaved(),
+    Future.delayed(const Duration(milliseconds: 2500)),
+  ]);
+}
+
+/// Reset so next _initApp call will re-run _doInitApp
+void _resetInitApp() {
+  _initAppFuture = null;
 }
 
 class HomieApp extends StatelessWidget {
@@ -53,15 +84,37 @@ class HomieApp extends StatelessWidget {
         title: 'Homie',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: Consumer<AuthProvider>(
-          builder: (context, auth, _) {
+        home: const RootScreen(),
+      ),
+    );
+  }
+}
+
+class RootScreen extends StatelessWidget {
+  const RootScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        // Reset init future when user is not authenticated
+        // so that re-login triggers a fresh data load
+        if (!auth.isAuthenticated) {
+          _resetInitApp();
+        }
+        return FutureBuilder(
+          future: _initApp(context),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const FlashScreen();
+            }
             if (auth.isAuthenticated) {
               return const MainApp();
             }
             return const SplashScreen();
           },
-        ),
-      ),
+        );
+      },
     );
   }
 }

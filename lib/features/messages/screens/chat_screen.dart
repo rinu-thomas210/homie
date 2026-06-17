@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -178,29 +179,40 @@ class _ChatScreenState extends State<ChatScreen> {
                   icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.textMedium, size: 26),
                 ),
                 Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      filled: true,
-                      fillColor: AppColors.background,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: AppColors.border),
+                  child: RawKeyboardListener(
+                    focusNode: FocusNode(),
+                    onKey: (event) {
+                      if (event is RawKeyDownEvent &&
+                          event.logicalKey.keyLabel == 'Enter' &&
+                          !event.isShiftPressed) {
+                        _sendMessage();
+                      }
+                    },
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        filled: true,
+                        fillColor: AppColors.background,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                      ),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendMessage(),
+                      maxLines: 3,
+                      minLines: 1,
                     ),
-                    onSubmitted: (_) => _sendMessage(),
-                    maxLines: 3,
-                    minLines: 1,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -244,9 +256,7 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final sender = isMe
         ? null
-        : SampleData.users.firstWhere(
-            (u) => u.id == message.senderId,
-            orElse: () => UserModel(
+        : UserModel(
               id: message.senderId,
               name: 'Roommate',
               age: 25,
@@ -267,8 +277,7 @@ class _MessageBubble extends StatelessWidget {
               workFromHome: false,
               socialActivityLevel: 1,
               guestFrequency: 1,
-            ),
-          );
+            );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

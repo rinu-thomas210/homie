@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 Widget buildUserImage(
@@ -57,9 +59,12 @@ Widget buildUserImage(
   }
 }
 
+// A transparent 1x1 pixel image
+final Uint8List _transparentPixel = base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==');
+
 ImageProvider getUserImageProvider(String photoUrl) {
   if (photoUrl.isEmpty) {
-    return const AssetImage('assets/images/placeholder.png'); // fallback
+    return MemoryImage(_transparentPixel); // transparent fallback
   }
   if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('blob:')) {
     return NetworkImage(photoUrl);
@@ -67,7 +72,7 @@ ImageProvider getUserImageProvider(String photoUrl) {
     try {
       return FileImage(File(photoUrl));
     } catch (e) {
-      return const AssetImage('assets/images/placeholder.png');
+      return MemoryImage(_transparentPixel);
     }
   }
 }

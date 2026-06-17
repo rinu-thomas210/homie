@@ -10,6 +10,7 @@ import '../../../data/models/user_model.dart';
 import '../../../data/models/message_model.dart';
 import '../../../data/providers/message_provider.dart';
 import '../../../data/providers/saved_listings_provider.dart';
+import '../../../data/models/review_model.dart';
 import '../../../data/providers/review_provider.dart';
 import '../../messages/screens/chat_screen.dart';
 import '../../../data/providers/roommate_provider.dart';
@@ -379,15 +380,10 @@ class _RoommateProfileScreenState extends State<RoommateProfileScreen> {
     return Consumer<ReviewProvider>(
       builder: (context, reviewProvider, _) {
         final globalReviews = reviewProvider.reviewsFor(widget.user.id);
-        // Show at most 2 global reviews; supplement with static placeholders if needed
-        final staticReviews = <Map<String, dynamic>>[
-          {'name': 'Maria S.', 'rating': 5, 'text': 'Amazing roommate! Super clean and respectful of shared spaces.'},
-          {'name': 'Tom K.', 'rating': 5, 'text': 'We lived together for 8 months. Great communication.'},
-        ];
-        final displayReviews = [
-          ...globalReviews.map((r) => {'name': r.reviewerName, 'rating': r.rating, 'text': r.text}),
-          ...staticReviews,
-        ].take(5).toList();
+        final displayReviews = globalReviews
+            .map((r) => {'name': r.reviewerName, 'rating': r.rating, 'text': r.text})
+            .take(5)
+            .toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -581,7 +577,7 @@ class _RoommateProfileScreenState extends State<RoommateProfileScreen> {
                               roommateProvider.acceptRoommateRequest(widget.user.id);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('You and ${widget.user.name.split(' ').first} are now roommates! 🏠'),
+                                  content: Text('You and ${widget.user.name.split(' ').first} are now roommates!'),
                                   backgroundColor: AppColors.accentGreen,
                                 ),
                               );
@@ -626,7 +622,7 @@ class _RoommateProfileScreenState extends State<RoommateProfileScreen> {
                             roommateProvider.acceptRoommateRequest(widget.user.id);
                             messenger.showSnackBar(
                               SnackBar(
-                                content: Text('${widget.user.name.split(' ').first} accepted your roommate request! 🎉'),
+                                content: Text('${widget.user.name.split(' ').first} accepted your roommate request!'),
                                 backgroundColor: AppColors.accentGreen,
                                 duration: const Duration(seconds: 4),
                               ),

@@ -125,13 +125,13 @@ class _ProfilePreferencesScreenState extends State<ProfilePreferencesScreen> {
     return true;
   }
 
-  void _savePreferences() {
+  Future<void> _savePreferences() async {
     if (!_validateCurrentStep()) return;
 
     final age = int.tryParse(_ageController.text) ?? 25;
 
     final auth = context.read<AuthProvider>();
-    auth.setUserPreferences({
+    await auth.setUserPreferences({
       'age': age,
       'gender': _genderController.text,
       'occupation': _occupationController.text,
@@ -154,10 +154,12 @@ class _ProfilePreferencesScreenState extends State<ProfilePreferencesScreen> {
     });
 
     auth.setAuthenticated(true);
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainApp()),
-      (route) => false,
-    );
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const RootScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -255,7 +257,7 @@ class _ProfilePreferencesScreenState extends State<ProfilePreferencesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Tell us about yourself 🧑‍🦰',
+          'Tell us about yourself',
           style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textDark),
         ).animate().slideY(begin: 0.2, duration: 400.ms).fade(duration: 400.ms),
         const SizedBox(height: 8),
@@ -324,7 +326,7 @@ class _ProfilePreferencesScreenState extends State<ProfilePreferencesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Housing Preferences 🏠',
+          'Housing Preferences',
           style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textDark),
         ).animate().slideY(begin: 0.2, duration: 400.ms).fade(duration: 400.ms),
         const SizedBox(height: 8),
@@ -378,7 +380,7 @@ class _ProfilePreferencesScreenState extends State<ProfilePreferencesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Lifestyle Preferences 🌙',
+          'Lifestyle Preferences',
           style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textDark),
         ).animate().slideY(begin: 0.2, duration: 400.ms).fade(duration: 400.ms),
         const SizedBox(height: 8),

@@ -14,6 +14,9 @@ import '../../messages/screens/chat_screen.dart';
 import '../../profile/screens/roommate_profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/roommate_provider.dart';
+import 'review_screen.dart';
+import '../../../data/providers/review_provider.dart';
+import '../../../core/utils/image_helper.dart';
 
 class ListingDetailScreen extends StatefulWidget {
   final ListingModel listing;
@@ -57,6 +60,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       _buildAmenities(listing),
                       _buildRoommatesSection(listing),
                       const SizedBox(height: 20),
+                      _buildReviewsSection(listing),
+                      const SizedBox(height: 20),
                       _buildHostSection(listing),
                       const SizedBox(height: 100),
                     ],
@@ -87,11 +92,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       actions: [
         GestureDetector(
           onTap: () {
-            context.read<SavedListingsProvider>().toggleSave('listing_${widget.listing.id}');
+            context.read<SavedListingsProvider>().toggleSave(widget.listing.id);
           },
           child: Consumer<SavedListingsProvider>(
             builder: (context, savedProvider, _) {
-              final isSaved = savedProvider.isSaved('listing_${widget.listing.id}');
+              final isSaved = savedProvider.isSaved(widget.listing.id);
               return Container(
                 margin: const EdgeInsets.all(8),
                 padding: const EdgeInsets.all(8),
@@ -159,7 +164,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                     color: AppColors.accentOrange,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text('⭐ Featured', style: GoogleFonts.outfit(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                  child: Text('Featured', style: GoogleFonts.outfit(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               ),
           ],
@@ -389,12 +394,31 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           ),
           OutlinedButton(
             onPressed: () {
-              final hostUser = SampleData.users.firstWhere(
-                (u) => u.id == listing.userId,
-                orElse: () => SampleData.users.first,
+              final hostUser = UserModel(
+                id: listing.userId,
+                name: listing.userName,
+                age: 25,
+                gender: '',
+                occupation: 'Property Manager',
+                city: listing.neighborhood.isNotEmpty ? listing.neighborhood : listing.location,
+                bio: 'Listed "${listing.title}"',
+                photoUrl: listing.userPhoto,
+                budgetRange: RangeValues(listing.monthlyRent * 0.8, listing.monthlyRent * 1.2),
+                preferredLocation: listing.location,
+                moveInDate: listing.availableFrom,
+                leaseDuration: '12 months',
+                sleepSchedule: '',
+                cleanlinessLevel: 3,
+                smoking: false,
+                drinking: false,
+                pets: false,
+                workFromHome: false,
+                socialActivityLevel: 3,
+                guestFrequency: 2,
+                isVerified: listing.userVerified,
               );
               final authProvider = context.read<AuthProvider>();
-              final currentUser = authProvider.currentUser ?? SampleData.currentUser;
+              final currentUser = authProvider.currentUser!;
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => RoommateProfileScreen(
@@ -436,11 +460,29 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
             itemCount: listing.roommateIds.length,
             itemBuilder: (context, i) {
               final roommateId = listing.roommateIds[i];
-              final roommateUser = SampleData.users.firstWhere(
-                (u) => u.id == roommateId,
-                orElse: () => SampleData.users.first,
+              final roommateUser = UserModel(
+                id: roommateId,
+                name: 'Roommate',
+                age: 25,
+                gender: '',
+                occupation: '',
+                city: '',
+                bio: '',
+                photoUrl: '',
+                budgetRange: const RangeValues(0, 0),
+                preferredLocation: '',
+                moveInDate: DateTime.now(),
+                leaseDuration: '',
+                sleepSchedule: '',
+                cleanlinessLevel: 1,
+                smoking: false,
+                drinking: false,
+                pets: false,
+                workFromHome: false,
+                socialActivityLevel: 1,
+                guestFrequency: 1,
               );
-              final currentUser = context.read<AuthProvider>().currentUser ?? SampleData.currentUser;
+              final currentUser = context.read<AuthProvider>().currentUser!;
               final score = roommateUser.compatibilityWith(currentUser);
               
               return GestureDetector(
@@ -466,7 +508,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundImage: NetworkImage(roommateUser.photoUrl),
+                        backgroundColor: AppColors.cardBg,
+                        child: const Icon(Icons.person_rounded, size: 22, color: AppColors.textLight),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -494,11 +537,139 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     ).animate().fade(duration: 400.ms, delay: 280.ms);
   }
 
+  Widget _buildReviewsSection(ListingModel listing) {
+    return Consumer<ReviewProvider>(
+      builder: (context, reviewProvider, _) {
+        final listingReviews = reviewProvider.reviewsForListing(listing.id);
+        final hostReviews = reviewProvider.reviewsFor(listing.userId);
+        final allReviews = [...listingReviews, ...hostReviews];
+        // Deduplicate by id
+        final seen = <String>{};
+        final uniqueReviews = allReviews.where((r) => seen.add(r.id)).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Reviews',
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark),
+                ),
+                if (uniqueReviews.isNotEmpty)
+                  Row(
+                    children: [
+                      const Icon(Icons.star_rounded, color: AppColors.accentOrange, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${uniqueReviews.isEmpty ? 0.0 : (uniqueReviews.fold<int>(0, (sum, r) => sum + r.rating) / uniqueReviews.length).toStringAsFixed(1)} • ${uniqueReviews.length} reviews',
+                        style: GoogleFonts.outfit(fontSize: 13, color: AppColors.textMedium),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (uniqueReviews.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.rate_review_outlined, size: 32, color: AppColors.textLight),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No reviews yet',
+                      style: GoogleFonts.outfit(fontSize: 14, color: AppColors.textMedium),
+                    ),
+                    Text(
+                      'Be the first to review this listing!',
+                      style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textLight),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...uniqueReviews.take(5).map((review) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppColors.primary,
+                            child: Text(
+                              review.reviewerName.isNotEmpty ? review.reviewerName.substring(0, 1) : '?',
+                              style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              review.reviewerName,
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                          Row(
+                            children: List.generate(
+                              review.rating,
+                              (_) => const Icon(Icons.star_rounded, color: AppColors.accentOrange, size: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        review.text,
+                        style: GoogleFonts.outfit(fontSize: 13, color: AppColors.textMedium),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                        style: GoogleFonts.outfit(fontSize: 10, color: AppColors.textLight),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        ).animate().fade(duration: 400.ms, delay: 290.ms);
+      },
+    );
+  }
+
   void _handleRequest(ListingModel listing, RoommateProvider roommateProvider) {
     if (roommateProvider.hasRentedRoom) return;
 
     final notifProvider = context.read<NotificationProvider>();
+    final msgProvider = context.read<MessageProvider>();
     roommateProvider.requestListing(listing.id);
+
+    // Start or get conversation with listing owner/host
+    msgProvider.startConversation(
+      listing.userId,
+      listing.userName,
+      listing.userPhoto,
+      listing.userVerified,
+      0.85, // compatibility placeholder
+    );
+    // Send request message in chat
+    final conv = msgProvider.conversations.firstWhere((c) => c.otherUserId == listing.userId);
+    msgProvider.sendMessage(conv.id, 'I would like to request to join your listing "${listing.title}".');
 
     notifProvider.addNotification(
       icon: Icons.send_rounded,
@@ -509,7 +680,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Request sent to ${listing.isOwnerPost ? "Owner" : "Host"}! 📩'),
+        content: Text('Request sent to ${listing.isOwnerPost ? "Owner" : "Host"}!'),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -522,7 +693,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         notifProvider.addNotification(
           icon: listing.isOwnerPost ? Icons.home_rounded : Icons.group_add_rounded,
           color: AppColors.accentGreen,
-          title: listing.isOwnerPost ? 'Room Secured! 🏠' : 'Joined Room Group! 👥',
+          title: listing.isOwnerPost ? 'Room Secured!' : 'Joined Room Group!',
           subtitle: listing.isOwnerPost 
               ? 'Owner accepted your request for "${listing.title}". Secured!'
               : 'Host accepted your request for "${listing.title}". You joined!',
@@ -531,8 +702,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(listing.isOwnerPost 
-                ? 'Owner accepted request! Secured "${listing.title}" 🏠'
-                : 'Host accepted request! Joined room group 👥'),
+                ? 'Owner accepted request! Secured "${listing.title}"'
+                : 'Host accepted request! Joined room group'),
             backgroundColor: AppColors.accentGreen,
           ),
         );
@@ -586,6 +757,20 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.primary, size: 20),
+              ),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReviewScreen(listing: listing)));
+              },
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.star_outline_rounded, color: AppColors.accent, size: 20),
               ),
             ),
             const SizedBox(width: 10),

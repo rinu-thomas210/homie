@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/listing_model.dart';
 import '../../../data/providers/listings_provider.dart';
+import '../../../data/providers/auth_provider.dart';
 import '../../listings/screens/listing_detail_screen.dart';
 import '../../profile/screens/roommate_profile_screen.dart';
 
@@ -61,17 +62,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   List<UserModel> get _filteredUsers {
-    final currentUser = SampleData.currentUser;
-    return SampleData.users.where((u) {
-      if (_searchController.text.isNotEmpty &&
-          !u.name.toLowerCase().contains(_searchController.text.toLowerCase()) &&
-          !u.occupation.toLowerCase().contains(_searchController.text.toLowerCase())) {
-        return false;
-      }
-      if (u.budgetRange.end > _maxBudget) return false;
-      return true;
-    }).toList()
-      ..sort((a, b) => b.compatibilityWith(currentUser).compareTo(a.compatibilityWith(currentUser)));
+    return <UserModel>[];
   }
 
   @override
@@ -254,7 +245,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Widget _buildPeopleTab() {
     final users = _filteredUsers;
-    final currentUser = SampleData.currentUser;
+    final currentUser = context.read<AuthProvider>().currentUser!;
     if (users.isEmpty) {
       return _buildEmptyState('No people found', 'Try adjusting your search', Icons.people_outlined);
     }
@@ -416,18 +407,25 @@ class _ListingListCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                child: Image.network(
-                  listing.photos.first,
-                  width: 110,
-                  height: 120,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 110,
-                    height: 120,
-                    color: AppColors.cardBg,
-                    child: const Icon(Icons.home_rounded, size: 36, color: AppColors.textLight),
-                  ),
-                ),
+                child: listing.photos.isNotEmpty
+                    ? Image.network(
+                        listing.photos.first,
+                        width: 110,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 110,
+                          height: 120,
+                          color: AppColors.cardBg,
+                          child: const Icon(Icons.home_rounded, size: 36, color: AppColors.textLight),
+                        ),
+                      )
+                    : Container(
+                        width: 110,
+                        height: 120,
+                        color: AppColors.cardBg,
+                        child: const Icon(Icons.home_rounded, size: 36, color: AppColors.textLight),
+                      ),
               ),
               if (listing.isFeatured)
                 Positioned(

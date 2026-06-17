@@ -13,6 +13,10 @@ import '../../../data/providers/listings_provider.dart';
 import '../../messages/screens/chat_screen.dart';
 import '../../listings/screens/listing_detail_screen.dart';
 import '../../profile/screens/roommate_profile_screen.dart';
+import '../../profile/screens/profile_screen.dart';
+import '../../profile/screens/notifications_screen.dart';
+import '../../expenses/screens/expenses_screen.dart';
+import '../../explore/screens/explore_map_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/roommate_provider.dart';
 
@@ -29,10 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late UserModel _topMatch;
 
   void _initializeMatches(UserModel currentUser) {
-    _matches = SampleData.users.map((u) {
-      return u;
-    }).toList();
-    _matches.sort((a, b) => b.compatibilityWith(currentUser).compareTo(a.compatibilityWith(currentUser)));
+    _matches = [];
   }
 
   @override
@@ -40,23 +41,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final expenses = context.watch<ExpenseProvider>();
     final authProvider = context.watch<AuthProvider>();
     final roommateProvider = context.watch<RoommateProvider>();
-    _currentUser = authProvider.currentUser ?? SampleData.currentUser;
+    _currentUser = authProvider.currentUser!;
     
     if (_matches.isEmpty) {
       _initializeMatches(_currentUser);
     }
     
-    if (_matches.isEmpty) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    
-    _topMatch = _matches.first;
-    final topScore = _topMatch.compatibilityWith(_currentUser);
+    _topMatch = _matches.isNotEmpty ? _matches.first : _currentUser;
+    final topScore = _matches.isNotEmpty ? _topMatch.compatibilityWith(_currentUser) : 0.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -69,10 +61,10 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               _buildRentedListingCard(roommateProvider),
               _buildRoommateRequests(roommateProvider),
-              _buildDailyMatch(topScore),
-              const SizedBox(height: 28),
-              _buildCompatibleSection(),
-              const SizedBox(height: 28),
+              if (_matches.isNotEmpty) _buildDailyMatch(topScore),
+              if (_matches.isNotEmpty) const SizedBox(height: 28),
+              if (_matches.isNotEmpty) _buildCompatibleSection(),
+              if (_matches.isNotEmpty) const SizedBox(height: 28),
               _buildNearbyListings(),
               const SizedBox(height: 28),
               _buildExpenseSummary(expenses),
@@ -93,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Good morning 👋',
+                'Welcome',
                 style: GoogleFonts.outfit(fontSize: 14, color: AppColors.textMedium),
               ),
               Text(
@@ -107,35 +99,47 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const Spacer(),
-          Stack(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+            child: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(Icons.notifications_outlined, color: AppColors.textDark, size: 22),
                 ),
-                child: const Icon(Icons.notifications_outlined, color: AppColors.textDark, size: 22),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: 10),
-          CircleAvatar(
-            radius: 22,
-            backgroundImage: getUserImageProvider(currentUser.photoUrl),
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+            child: currentUser.photoUrl.isNotEmpty
+                ? CircleAvatar(
+                    radius: 22,
+                    backgroundImage: getUserImageProvider(currentUser.photoUrl),
+                  )
+                : CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppColors.cardBg,
+                    child: const Icon(Icons.person_rounded, size: 24, color: AppColors.textLight),
+                  ),
           ),
         ],
       ).animate().fade(duration: 400.ms).slideY(begin: -0.1),
@@ -428,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ExploreMapScreen())),
                 child: Text(
                   'Explore Map',
                   style: GoogleFonts.outfit(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 14),
@@ -467,19 +471,21 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildExpenseSummary(ExpenseProvider expenses) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: AppColors.expenseGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ExpensesScreen())),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: AppColors.expenseGradient,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -555,7 +561,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1)
+        ),
+      ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1),
     );
   }
 
@@ -587,7 +594,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           ...pendingReceived.map((userId) {
-            final user = SampleData.users.firstWhere((u) => u.id == userId, orElse: () => SampleData.users.first);
+            final user = UserModel(
+              id: userId,
+              name: 'Roommate',
+              age: 25,
+              gender: '',
+              occupation: '',
+              city: '',
+              bio: '',
+              photoUrl: '',
+              budgetRange: const RangeValues(0, 0),
+              preferredLocation: '',
+              moveInDate: DateTime.now(),
+              leaseDuration: '',
+              sleepSchedule: '',
+              cleanlinessLevel: 1,
+              smoking: false,
+              drinking: false,
+              pets: false,
+              workFromHome: false,
+              socialActivityLevel: 1,
+              guestFrequency: 1,
+            );
             final score = user.compatibilityWith(_currentUser);
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -608,7 +636,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: CircleAvatar(
                       radius: 24,
-                      backgroundImage: NetworkImage(user.photoUrl),
+                      backgroundColor: AppColors.cardBg,
+                      child: const Icon(Icons.person_rounded, size: 28, color: AppColors.textLight),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -648,7 +677,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           roommateProvider.acceptRoommateRequest(user.id);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('You and ${user.name.split(' ').first} are now roommates! 🏠'),
+                              content: Text('You and ${user.name.split(' ').first} are now roommates!'),
                               backgroundColor: AppColors.accentGreen,
                             ),
                           );
@@ -712,12 +741,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      listing.photos.first,
-                      width: 70,
-                      height: 70,
-                      fit: BoxFit.cover,
-                    ),
+                    child: listing.photos.isNotEmpty
+                        ? Image.network(
+                            listing.photos.first,
+                            width: 70,
+                            height: 70,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            width: 70,
+                            height: 70,
+                            color: AppColors.cardBg,
+                            child: const Icon(Icons.home_rounded, size: 24, color: AppColors.textLight),
+                          ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -866,18 +902,25 @@ class _ListingCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  listing.photos.isNotEmpty ? listing.photos.first : 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-                  height: 130,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 130,
-                    width: double.infinity,
-                    color: AppColors.cardBg,
-                    child: const Icon(Icons.home_rounded, size: 40, color: AppColors.textLight),
-                  ),
-                ),
+                child: listing.photos.isNotEmpty
+                    ? Image.network(
+                        listing.photos.first,
+                        height: 130,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 130,
+                          width: double.infinity,
+                          color: AppColors.cardBg,
+                          child: const Icon(Icons.home_rounded, size: 40, color: AppColors.textLight),
+                        ),
+                      )
+                    : Container(
+                        height: 130,
+                        width: double.infinity,
+                        color: AppColors.cardBg,
+                        child: const Icon(Icons.home_rounded, size: 40, color: AppColors.textLight),
+                      ),
               ),
               Positioned(
                 top: 10,

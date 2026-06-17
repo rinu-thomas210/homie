@@ -87,7 +87,7 @@ class _SavedProfilesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<SavedListingsProvider>();
     final likedIds = provider.likedUserIds;
-    final liked = SampleData.users.where((u) => likedIds.contains(u.id)).toList();
+    final liked = <UserModel>[];
 
     if (liked.isEmpty) {
       return const _EmptyState(
@@ -119,7 +119,7 @@ class _RoommateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.read<SavedListingsProvider>();
     final auth = context.read<AuthProvider>();
-    final currentUser = auth.currentUser ?? SampleData.currentUser;
+    final currentUser = auth.currentUser!;
 
     return GestureDetector(
       onTap: () {

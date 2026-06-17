@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/auth_provider.dart';
+import '../../../main.dart';
 import 'login_screen.dart';
-import 'otp_screen.dart';
+import 'profile_preferences_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,37 +19,19 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _agreeToTerms = false;
-  
-  final List<Map<String, String>> _countries = [
-    {'name': 'USA', 'code': '+1', 'length': '10'},
-    {'name': 'UK', 'code': '+44', 'length': '10'},
-    {'name': 'India', 'code': '+91', 'length': '10'},
-    {'name': 'Australia', 'code': '+61', 'length': '9'},
-    {'name': 'Germany', 'code': '+49', 'length': '10'},
-    {'name': 'Canada', 'code': '+1', 'length': '10'},
-    {'name': 'France', 'code': '+33', 'length': '9'},
-    {'name': 'UAE', 'code': '+971', 'length': '9'},
-    {'name': 'Singapore', 'code': '+65', 'length': '8'},
-    {'name': 'Japan', 'code': '+81', 'length': '10'},
-    {'name': 'Brazil', 'code': '+55', 'length': '11'},
-  ];
-  late Map<String, String> _selectedCountry;
 
   @override
   void initState() {
     super.initState();
-    _selectedCountry = _countries[0];
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -62,15 +45,56 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     if (_formKey.currentState?.validate() ?? false) {
       final auth = context.read<AuthProvider>();
+      
+      // Check for duplicate account
+      await auth.signUp(_emailController.text, _passwordController.text);
+      
+      if (auth.error != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.error!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       auth.updateSignupData({
         'name': _nameController.text,
         'email': _emailController.text,
-        'phone': _phoneController.text,
+        'password': _passwordController.text,
       });
-      Navigator.of(context).push(
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => OtpScreen(phone: _phoneController.text),
+          builder: (_) => const ProfilePreferencesScreen(),
         ),
+      );
+    }
+  }
+
+  Future<void> _signUpWithGoogle() async {
+    final auth = context.read<AuthProvider>();
+    await auth.signInWithGoogle();
+    
+    if (auth.error != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.error!),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
+    if (mounted && auth.isAuthenticated) {
+      // Direct them to RootScreen since google auth is simulated with preferences already set
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const RootScreen()),
+        (route) => false,
       );
     }
   }
@@ -123,7 +147,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 32),
 
                   Text(
-                    'Create Account ✨',
+                    'Create Account',
                     style: GoogleFonts.outfit(
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
@@ -148,17 +172,17 @@ class _SignupScreenState extends State<SignupScreen> {
                       },
                       delay: 100),
                   const SizedBox(height: 16),
-                  _buildField('Email Address', _emailController, Icons.email_outlined, 'your@email.com',
+                  _buildField('Email Address', _emailController, Icons.email_outlined, 'yourname@gmail.com',
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Enter your email';
-                        if (!RegExp(r'^[a-zA-Z][\w-\.]*@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v)) return 'Enter a valid email';
+                        if (!RegExp(r'^[a-zA-Z0-9._%+-]+@gmail\.com$').hasMatch(v)) {
+                          return 'Only @gmail.com email addresses are allowed';
+                        }
                         return null;
                       },
                       delay: 150),
-                  const SizedBox(height: 16),
-                  _buildPhoneField(),
-                  const SizedBox(height: 16),
+
 
                   Text(
                     'Password',
@@ -246,7 +270,50 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ).animate().slideY(begin: 0.2, duration: 400.ms, delay: 300.ms).fade(duration: 400.ms, delay: 300.ms),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
+
+                  // Divider
+                  Row(
+                    children: [
+                      const Expanded(child: Divider(color: AppColors.border)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'or continue with',
+                          style: GoogleFonts.outfit(
+                            color: AppColors.textLight,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const Expanded(child: Divider(color: AppColors.border)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Social login buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SocialButton(
+                          icon: Icons.g_mobiledata_rounded,
+                          label: 'Google',
+                          onTap: _signUpWithGoogle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SocialButton(
+                          icon: Icons.apple_rounded,
+                          label: 'Apple',
+                          onTap: () {},
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -294,55 +361,42 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     ).animate().slideY(begin: 0.2, duration: 400.ms, delay: delay.ms).fade(duration: 400.ms, delay: delay.ms);
   }
+}
 
-  Widget _buildPhoneField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Phone Number', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-        const SizedBox(height: 8),
-        Row(
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SocialButton({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<Map<String, String>>(
-                  value: _selectedCountry,
-                  items: _countries.map((c) => DropdownMenuItem(
-                    value: c, 
-                    child: Text('${c['name']} (${c['code']})', style: GoogleFonts.outfit(fontSize: 14)),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _selectedCountry = v!),
-                ),
-              ),
-            ),
+            Icon(icon, size: 22, color: AppColors.textDark),
             const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: '${_selectedCountry['code']} Enter ${_selectedCountry['length']} digits',
-                  prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textLight),
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Enter your phone number';
-                  final digits = v.replaceAll(RegExp(r'\D'), '');
-                  final requiredLen = int.tryParse(_selectedCountry['length'] ?? '10') ?? 10;
-                  if (digits.length != requiredLen) {
-                    return 'Must be exactly $requiredLen digits for ${_selectedCountry['name']}';
-                  }
-                  return null;
-                },
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
               ),
             ),
           ],
         ),
-      ],
-    ).animate().slideY(begin: 0.2, duration: 400.ms, delay: 200.ms).fade(duration: 400.ms, delay: 200.ms);
+      ),
+    );
   }
 }
+
